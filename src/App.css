@@ -1,0 +1,378 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f6f8fa;
+  margin: 0;
+  padding: 0;
+  color: #2c3e50;
+}
+
+h2 {
+  text-align: center;
+  color: #1e3a8a;
+  margin-bottom: 2rem;
+}
+
+input {
+  font-size: 16px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 15px;
+  border-radius: 6px;
+  margin: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+button:hover {
+  background-color: #1e40af;
+}
+
+button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.column-rules {
+  flex: 1;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(255,255,255,0.1);
+}
+
+.column {
+  flex: 1;
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.column h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+#ast-tree {
+  width: 100%;
+  height: 700px;
+}
+
+.math-block {
+  margin-bottom: 0.5rem;
+}
+
+.math-block:last-child {
+  font-weight: bold;
+  background-color: #f1f5f9;
+  border-left: 4px solid #2563eb;
+  padding-left: 8px;
+  border-radius: 4px;
+}
+
+h4 {
+  margin-top: 0;
+  color: #1e40af;
+}
+code {
+  background-color: #e2e8f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+button {
+  margin: 0.25rem;
+  padding: 0.5rem 1rem;
+}
+
+button:nth-of-type(4) {
+  background-color: #10b981; /* zelená - zobraziť všetko */
+}
+
+button:nth-of-type(5) {
+  background-color: #ef4444; /* červená - reset */
+}
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+  align-items: flex-start; /* <-- toto je dôležité! */
+}
+
+
+
+#ast-tree {
+  width: 100%;
+  height: 700px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Desktop: tri stĺpce vedľa seba */
+@media (min-width: 768px) {
+  .column {
+    flex: 1 1 25%;
+    min-width: 0; /* zamedzí pretekaniu */
+  }
+
+  .column.middle {
+    flex: 1 1 20%;
+  }
+}
+
+.dark-mode {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+.dark-mode input,
+.dark-mode select,
+.dark-mode button {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid #334155;
+}
+
+.dark-mode .column {
+  background-color: #1e293b;
+
+  box-shadow: none;
+}
+
+.dark-mode .math-block:last-child {
+  background-color: #334155;
+  border-left: 4px solid #60a5fa;
+}
+
+button {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+input[type="text"],
+input[type="number"] {
+  font-size: 14px;
+  padding: 6px 8px;
+  height: 32px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+  max-width: 300px;
+}
+
+input:focus {
+  outline: 2px solid #2563eb;
+}
+
+.environment-inputs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  align-items: center;
+}
+
+button.add-var {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.remove-var {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.variable-chip {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e2e8f0;
+  border-radius: 16px;
+  padding: 4px 8px;
+  margin-right: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.variable-chip input {
+  border: none;
+  background: transparent;
+  width: 30px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.variable-chip input:focus {
+  outline: none;
+  background-color: white;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #ccc;
+}
+
+.variable-chip .remove {
+  margin-left: 6px;
+  cursor: pointer;
+  color: red;
+  font-weight: bold;
+}
+
+.variable-chip {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e2e8f0;
+  border-radius: 16px;
+  padding: 2px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 4px;
+}
+
+.variable-chip input {
+  border: none;
+  background: transparent;
+  width: 28px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.variable-chip input:focus {
+  outline: none;
+  background-color: white;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #ccc;
+}
+
+.variable-chip .remove {
+  margin-left: 4px;
+  cursor: pointer;
+  color: red;
+  font-weight: bold;
+}
+
+.add-var {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 2px 8px;
+  font-size: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* DARK MODE podpora */
+.dark-mode .variable-chip {
+  background-color: #1e293b;
+  color: white;
+}
+
+.dark-mode .variable-chip input {
+  background-color: transparent;
+  color: white;
+}
+
+.dark-mode .variable-chip input:focus {
+  background-color: #0f172a;
+  border: 1px solid #334155;
+}
+
+.dark-mode .add-var {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.column.rules {
+  flex: 1;
+  min-width: 260px;
+  max-width: 100%;
+  padding: 1rem;
+  font-size: clamp(0.7rem, 1vw + 0.2rem, 1.1rem);
+  line-height: 1.5;
+  word-break: break-word;
+  overflow: hidden; /* nie scrollovanie */
+}
+
+.katex-display {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.rules-container, .help-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 1rem;
+}
+
+/* DARK MODE – pomocné kontajnery */
+.dark-mode .rules-container,
+.dark-mode .help-container {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  box-shadow: none;
+}
+
+.dark-mode h4 {
+  color: #f1f5f9;
+}
+.dark-mode .help-container {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-mode .help-container summary,
+.dark-mode .help-container details,
+.dark-mode .help-container ul,
+.dark-mode .help-container li {
+  color: #f1f5f9;
+}
+
+.dark-mode .help-container code {
+  background-color: #334155;
+  color: #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+
+.dark-mode .help-container details[open] summary {
+  font-weight: bold;
+}
