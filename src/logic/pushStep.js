@@ -1,7 +1,7 @@
 import { generateStep1, generateStep2, generateStep3, generateStep4, generateStep5, generateStep7 } from './buildSteps';
 import { getStep5ReplacementCount } from './buildSteps';
 
-export function evaluateUpToStep(ast, env) {
+export function evaluateUpToStep(ast, env, customRules = []) {
   const steps = [];
   const depth = getAstDepth(ast);
   //console.log(depth);
@@ -43,7 +43,7 @@ export function evaluateUpToStep(ast, env) {
   }
       
   // Krok 7 (výpočtové kroky)
-  const step7List = generateStep7(ast, env);
+  const step7List = generateStep7(ast, env, customRules);
   step7List.forEach((s) => {
     steps.push(`${s}`);
   });

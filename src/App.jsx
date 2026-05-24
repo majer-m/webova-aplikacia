@@ -22,6 +22,16 @@ export default function App() {
   const [showHelpSection, setShowHelpSection] = useState(false);
   const [language, setLanguage] = useState('sk'); // 'sk' alebo 'en'
   const [darkMode, setDarkMode] = useState(false);
+  const [customRules, setCustomRules] = useState([]);
+  const [showRuleForm, setShowRuleForm] = useState(false);
+
+  const [newRule, setNewRule] = useState({
+  name: '',
+  scope: 'arith',
+  op: '',
+  behavior: '',
+  latex: ''
+  });
 
   function handleStart() {
     try {
@@ -37,7 +47,7 @@ export default function App() {
         ast.type === 'LogicalExpression' ||
         ast.type === 'BooleanLiteral' ||
         ast.type === 'UnaryExpression' ||
-        (ast.type === 'BinaryExpression' && ['<=', '=', '>=', '!='].includes(ast.operator))
+        (ast.type === 'BinaryExpression' && ['<=', '=', '>=', '!=', '<', '>'].includes(ast.operator))
       ) {
         inferredMode = 'bool';
       }
@@ -46,8 +56,8 @@ export default function App() {
 
       // Vykonaj výpočet podľa typu
       const allSteps = inferredMode === 'arith'
-        ? evaluateUpToStep(ast, env)
-        : evaluateBooleanSteps(ast, env);
+        ? evaluateUpToStep(ast, env, customRules)
+        : evaluateBooleanSteps(ast, env, customRules);
 
       setSteps(allSteps);
       setVisibleSteps([allSteps[0]]);
@@ -56,6 +66,47 @@ export default function App() {
       alert('Chyba: ' + err.message);
     }
   }
+
+  function handleAddCustomRule() {
+  if (
+    !newRule.name.trim() ||
+    !newRule.op.trim() ||
+    !newRule.behavior.trim() ||
+    !newRule.latex.trim()
+  ) {
+    alert(language === 'sk'
+      ? 'Vyplň názov, operátor aj LaTeX pravidla.'
+      : 'Fill in name, operator and rule LaTeX.'
+    );
+    return;
+  }
+
+  const rule = {
+    id: Date.now(),
+    name: newRule.name,
+    scope: newRule.scope,
+    op: newRule.op,
+    behavior: newRule.behavior,
+    latex: newRule.latex,
+    source: 'user'
+  };
+
+  setCustomRules([...customRules, rule]);
+
+  setNewRule({
+    name: '',
+    scope: 'arith',
+    op: '',
+    behavior: '',
+    latex: ''
+  });
+
+  setShowRuleForm(false);
+}
+
+function handleRemoveCustomRule(id) {
+  setCustomRules(customRules.filter(rule => rule.id !== id));
+}
 
 
   function parseEnv() {
@@ -255,9 +306,149 @@ export default function App() {
             {/* pravidlá sémantiky v samostatnom kontajneri */}
             <div className="rules-container">
             <h4>{translations[language].rules}</h4>
+            <button onClick={() => setShowRuleForm(prev => !prev)}>
+              {showRuleForm
+                ? (language === 'sk' ? 'Skryť formulár' : 'Hide form')
+                : (language === 'sk' ? '+ Pridať pravidlo' : '+ Add rule')}
+            </button>
+
+            {showRuleForm && (
+              <div className="custom-rule-form">
+                <label>
+                  {language === 'sk' ? 'Názov pravidla' : 'Rule name'}
+                </label>
+                <input
+                  type="text"
+                  value={newRule.name}
+                  onChange={e => setNewRule({ ...newRule, name: e.target.value })}
+                  placeholder={language === 'sk' ? 'Napr. Pravidlo pre delenie' : 'E.g. Division rule'}
+                />
+
+                <label>
+                  {language === 'sk' ? 'Typ pravidla' : 'Rule type'}
+                </label>
+                <select
+                  value={newRule.scope}
+                  onChange={e => setNewRule({ ...newRule, scope: e.target.value })}
+                >
+                  <option value="arith">
+                    {language === 'sk' ? 'Aritmetické' : 'Arithmetic'}
+                  </option>
+                  <option value="bool">
+                    {language === 'sk' ? 'Boolovské' : 'Boolean'}
+                  </option>
+                </select>
+
+                <label>
+                  {language === 'sk' ? 'Operátor' : 'Operator'}
+                </label>
+                <input
+                  type="text"
+                  value={newRule.op}
+                  onChange={e => setNewRule({ ...newRule, op: e.target.value })}
+                  placeholder="+, -, *, /, =, <=, ∧, ¬"
+                />
+
+                <label>
+                  {language === 'sk' ? 'Správanie pravidla' : 'Rule behavior'}
+                </label>
+
+                <select
+                  value={newRule.behavior}
+                  onChange={e => setNewRule({ ...newRule, behavior: e.target.value })}
+                >
+                  <option value="">
+                    {language === 'sk' ? '-- vyber --' : '-- select --'}
+                  </option>
+
+                  {newRule.scope === 'arith' && (
+                    <>
+                      <option value="add">
+                        {behaviorTranslations[language].Addition}
+                      </option>
+
+                      <option value="subtract">
+                        {behaviorTranslations[language].Subtraction}
+                      </option>
+
+                      <option value="multiply">
+                        {behaviorTranslations[language].Multiplication}
+                      </option>
+
+                      <option value="divide">
+                        {behaviorTranslations[language].Division}
+                      </option>
+
+                      <option value="modulo">
+                        {behaviorTranslations[language].Modulo}
+                      </option>
+                    </>
+                  )}
+
+                  {newRule.scope === 'bool' && (
+                    <>
+                      <option value="equal">
+                        {behaviorTranslations[language].Equality}
+                      </option>
+
+                      <option value="notEqual">
+                        {behaviorTranslations[language].NotEqual}
+                      </option>
+
+                      <option value="lessThan">
+                        {behaviorTranslations[language].LessThan}
+                      </option>
+
+                      <option value="greaterThan">
+                        {behaviorTranslations[language].GreaterThan}
+                      </option>
+
+                      <option value="lessEqual">
+                        {behaviorTranslations[language].LessOrEqual}
+                      </option>
+                      
+                      <option value="greaterEqual">
+                        {behaviorTranslations[language].GreaterOrEqual}
+                      </option> 
+
+                      <option value="and">
+                        {behaviorTranslations[language].AND}
+                      </option>
+
+                      <option value="or">
+                        {behaviorTranslations[language].OR}
+                      </option>
+
+                      <option value="not">
+                        {behaviorTranslations[language].NOT}
+                      </option>
+                    </>
+                  )}
+                </select>
+
+                <label>
+                  LaTeX
+                </label>
+                <textarea
+                  value={newRule.latex}
+                  onChange={e => setNewRule({ ...newRule, latex: e.target.value })}
+                  placeholder="\\mathcal{E}\\llbracket e_1 / e_2 \\rrbracket s = \\mathcal{E}\\llbracket e_1 \\rrbracket s \\div \\mathcal{E}\\llbracket e_2 \\rrbracket s"
+                  rows={4}
+                />
+
+                <button onClick={handleAddCustomRule}>
+                  {language === 'sk' ? 'Uložiť pravidlo' : 'Save rule'}
+                </button>
+              </div>
+            )}
             {[
               ...semanticRules,
-              ...(mode === 'bool' ? semanticRulesBool : [])
+              ...(mode === 'bool' ? semanticRulesBool : []),
+              ...customRules.filter(rule =>
+                mode === 'bool'
+                  ? rule.scope === 'arith' || rule.scope === 'bool'
+                  : rule.scope === 'arith'
+              )
             ].map((rule, i) => {
               let highlightedLatex = rule.latex;
 
@@ -323,7 +514,23 @@ export default function App() {
                 highlightedLatex = rule.latex.replace('\\mathbb{N}\\llbracket n \\rrbracket', '\\textcolor{darkblue}{\\mathbb{N}\\llbracket n \\rrbracket}');
               }
 
-              return <BlockMath key={i} math={highlightedLatex} />;
+              return (
+                        <div key={rule.id || i} className={rule.source === 'user' ? 'custom-rule-item' : ''}>
+                          {rule.source === 'user' && (
+                            <div className="custom-rule-header">
+                              <strong>{rule.name}</strong>
+                              <button
+                                className="remove-rule-btn"
+                                onClick={() => handleRemoveCustomRule(rule.id)}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+
+                          <BlockMath math={highlightedLatex} />
+                        </div>
+                      );
             })}
             </div>
             {/* Nápoveda v samostatnom kontajneri */}
@@ -572,5 +779,45 @@ const translations = {
     calculationTitle: "Evaluation Steps",
     help: "Show Help",
     hideHelp: "Hide Help"
+  }
+};
+
+const behaviorTranslations = {
+  sk: {
+    Addition: 'Sčítanie',
+    Subtraction: 'Odčítanie',
+    Multiplication: 'Násobenie',
+    Division: 'Delenie',
+    Modulo: 'Modulo',
+
+    Equality: 'Rovnosť',
+    NotEqual: 'Nerovnosť',
+    LessThan: 'Menšie ako',
+    GreaterThan: 'Väčšie ako',
+    LessOrEqual: 'Menšie alebo rovné',
+    GreaterOrEqual: 'Väčšie alebo rovné',
+
+    AND: 'AND',
+    OR: 'OR',
+    NOT: 'NOT'
+  },
+
+  en: {
+    Addition: 'Addition',
+    Subtraction: 'Subtraction',
+    Multiplication: 'Multiplication',
+    Division: 'Division',
+    Modulo: 'Modulo',
+
+    Equality: 'Equality',
+    NotEqual: 'Not Equal',
+    LessThan: 'Less Than',
+    GreaterThan: 'Greater Than',
+    LessOrEqual: 'Less or Equal',
+    GreaterOrEqual: 'Greater or Equal',
+
+    AND: 'AND',
+    OR: 'OR',
+    NOT: 'NOT'
   }
 };

@@ -376,3 +376,74 @@ button.remove-var {
 .dark-mode .help-container details[open] summary {
   font-weight: bold;
 }
+
+.custom-rule-form {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background-color: #f8fafc;
+}
+
+.custom-rule-form label {
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.custom-rule-form input,
+.custom-rule-form select,
+.custom-rule-form textarea {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  box-sizing: border-box;
+}
+
+.custom-rule-form textarea {
+  resize: vertical;
+  font-family: monospace;
+}
+
+.custom-rule-item {
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+  background-color: #f8fafc;
+}
+
+.custom-rule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.remove-rule-btn {
+  background-color: #ef4444;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.dark-mode .custom-rule-form,
+.dark-mode .custom-rule-item {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-mode .custom-rule-form input,
+.dark-mode .custom-rule-form select,
+.dark-mode .custom-rule-form textarea {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}

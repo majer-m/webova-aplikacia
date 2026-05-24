@@ -1,6 +1,6 @@
 function tokenize(input) {
   return input
-    .match(/\s*(=>|<=|==|[A-Za-z]+|\d+|[!¬&∧|+*/<>=()-])\s*/g)
+    .match(/\s*(=>|>=|<=|!=|==|∨|[A-Za-z]+|\d+|[%^]|[!¬&∧|+*/<>=()-])\s*/g)
     .map(token => token.trim())
     .filter(token => token.length > 0);
 }
@@ -57,7 +57,7 @@ export function parse(input) {
   function parseMultiplicative() {
     let node = parsePrimary();
 
-    while (peek() === '*' || peek() === '/') {
+    while (peek() === '*' || peek() === '/' || peek() === '%') {
       const operator = consume();
       const right = parsePrimary();
       node = {
@@ -93,7 +93,14 @@ export function parse(input) {
   function parseComparison() {
     let node = parseAdditive();
 
-    while (peek() === '=' || peek() === '<=') {
+    while (
+      peek() === '=' ||
+      peek() === '<=' ||
+      peek() === '>=' ||
+      peek() === '!=' ||
+      peek() === '<' ||
+      peek() === '>'
+    ) {
       const operator = consume();
       const right = parseAdditive();
       node = {
@@ -109,29 +116,35 @@ export function parse(input) {
   }
 
   function parseLogicalAnd() {
-    let node = parseComparison();
+  let node = parseComparison();
 
-    while (peek() === '∧' || peek() === '&') {
-      const operator = consume();
-      const right = parseComparison();
-      node = {
-        type: "LogicalExpression",
-        operator,
-        left: node,
-        right,
-        valueType: "bool"
-      };
-    }
+  while (peek() === '∧' || peek() === '&' || peek() === '∨' || peek() === 'v') {
+    const operator = consume();
+    const normalizedOperator = operator === 'v' ? '∨' : operator;
+    const right = parseComparison();
 
-    return node;
+    node = {
+      type: "LogicalExpression",
+      operator: normalizedOperator,
+      left: node,
+      right,
+      valueType: "bool"
+    };
   }
+
+  return node;
+}
 
   // 🔍 Automatické rozhodovanie podľa prítomnosti bool operátorov
   function parseExpression() {
-    const boolTokens = ['=', '<=', '∧', '&', '¬', '!', 'true', 'false'];
-    const isBoolean = tokens.some(token => boolTokens.includes(token));
-    return isBoolean ? parseLogicalAnd() : parseAdditive();
-  }
+  return parseLogicalAnd();
+}
 
-  return parseExpression();
+  const result = parseExpression();
+
+if (pos < tokens.length) {
+  throw new Error(`Unexpected token: ${tokens[pos]}`);
+}
+
+return result;
 }

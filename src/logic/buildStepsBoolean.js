@@ -1,12 +1,21 @@
 import { evaluateUpToStep } from './pushStep';
 
-export function evaluateBooleanSteps(ast, env) {
+export function evaluateBooleanSteps(ast, env, customRules = []) {
   const steps = [];
 
   if (
         ast.type === 'BinaryExpression' &&
         typeof ast.operator === 'string' &&
-        (ast.operator === '=' || ast.operator === '<=' || ast.operator === '≤')
+        (
+          ast.operator === '=' ||
+          ast.operator === '<=' ||
+          ast.operator === '≤' ||
+          customRules.some(rule =>
+            rule.scope === 'bool' &&
+            rule.op === ast.operator &&
+            ['notEqual', 'lessThan', 'greaterThan', 'greaterEqual', 'lessEqual', 'equal'].includes(rule.behavior)
+          )
+        )
     )  {
     const e1 = ast.left;
     const e2 = ast.right;
@@ -18,10 +27,28 @@ export function evaluateBooleanSteps(ast, env) {
     const e2Val = evalArithmetic(ast.right, env);
 
     let result;
-    if (ast.operator === '=') {
-        result = e1Val === e2Val ? 'tt' : 'ff';
-    } else if (ast.operator === '<=' || ast.operator === '≤') {
-        result = e1Val <= e2Val ? 'tt' : 'ff';
+
+    const customRule = customRules.find(rule =>
+      rule.scope === 'bool' &&
+      rule.op === ast.operator
+    );
+
+    const behavior = customRule?.behavior;
+
+    if (ast.operator === '=' || behavior === 'equal') {
+      result = e1Val === e2Val ? 'tt' : 'ff';
+    } else if (ast.operator === '<=' || ast.operator === '≤' || behavior === 'lessEqual') {
+      result = e1Val <= e2Val ? 'tt' : 'ff';
+    } else if (behavior === 'greaterThan') {
+      result = e1Val > e2Val ? 'tt' : 'ff';
+    } else if (behavior === 'lessThan') {
+      result = e1Val < e2Val ? 'tt' : 'ff';
+    } else if (behavior === 'greaterEqual') {
+      result = e1Val >= e2Val ? 'tt' : 'ff';
+    } else if (behavior === 'notEqual') {
+      result = e1Val !== e2Val ? 'tt' : 'ff';
+    } else {
+      throw new Error(`Nepodporované boolovské pravidlo pre operátor: ${ast.operator}`);
     }
 
     // =
@@ -51,12 +78,22 @@ export function evaluateBooleanSteps(ast, env) {
   return steps;
   }
 
-  if (ast.type === 'LogicalExpression' && ast.operator === '∧') {
+  if (
+      ast.type === 'LogicalExpression' &&
+      (
+        ast.operator === '∧' ||
+        customRules.some(rule =>
+          rule.scope === 'bool' &&
+          rule.op === ast.operator &&
+          ['and', 'or'].includes(rule.behavior)
+        )
+      )
+    ) {
   const left = ast.left;
   const right = ast.right;
 
-  const leftSteps = evaluateBooleanSteps(left, env);
-  const rightSteps = evaluateBooleanSteps(right, env);
+  const leftSteps = evaluateBooleanSteps(left, env, customRules);
+  const rightSteps = evaluateBooleanSteps(right, env, customRules);
 
   steps.push(...leftSteps);
   steps.push(...rightSteps);
@@ -128,10 +165,17 @@ function toExpr(ast) {
 
 function lastBoolResult(stepArray) {
   for (let i = stepArray.length - 1; i >= 0; i--) {
-    const raw = stepArray[i].raw;
+    const step = stepArray[i];
+
+    const raw =
+      typeof step === 'string'
+        ? step
+        : step.raw || '';
+
     if (raw.includes('tt')) return 'tt';
     if (raw.includes('ff')) return 'ff';
   }
+
   return '?';
 }
 

@@ -4,7 +4,8 @@ function astToExpression(ast) {
   } else if (ast.type === "Identifier") {
     return ast.name;
   } else if (ast.type === "BinaryExpression") {
-    return `(${astToExpression(ast.left)} ${ast.operator} ${astToExpression(ast.right)})`;
+    const op = ast.operator === '%' ? '\\%' : ast.operator;
+    return `(${astToExpression(ast.left)} ${op} ${astToExpression(ast.right)})`;
   } else {
     throw new Error("Unknown AST node type");
   }
@@ -37,7 +38,8 @@ function getOperatorSymbol(op) {
     case "+": return "⊕";
     case "-": return "⊖";
     case "*": return "⊗";
-    case "/": return "÷";
+    case "%": return "\\bmod";
+    case "^": return "^";
     default: return op;
   }
 }
@@ -197,19 +199,19 @@ export function getStep5ReplacementCount(ast) {
   return count * 2; // každý uzol má dva podkroky: E[[x]]s -> sx -> 6
 }
 
-export function generateStep7(ast, env) {
-  const expr = evaluateSymbolic2(ast, env);
+export function generateStep7(ast, env, customRules = []) {
+  const expr = evaluateSymbolic2(ast, env, customRules);
   const steps = [];
 
   let current = expr;
-  const parenExpr = /\((-?\d+)\s*([⊕⊖⊗÷])\s*(-?\d+)\)/;
+  const parenExpr = /\((-?\d+)\s*(⊕|⊖|⊗|÷|\\bmod|\^)\s*(-?\d+)\)/;
 
   while (true) {
     const match = current.match(parenExpr);
     if (!match) break;
 
     const [full, a, op, b] = match;
-    const result = compute(parseInt(a), op, parseInt(b));
+    const result = compute(parseInt(a), op, parseInt(b), customRules);
     const next = current.replace(full, result.toString());
 
     if (next !== current && !steps.includes(next)) {
@@ -227,7 +229,7 @@ export function generateStep7(ast, env) {
 }
 
 
-function evaluateSymbolic2(node, env) {
+function evaluateSymbolic2(node, env, customRules = []) {
   if (node.type === "Literal") {
     return `${node.value}`;
   }
@@ -240,8 +242,8 @@ function evaluateSymbolic2(node, env) {
   }
 
   if (node.type === "BinaryExpression") {
-    const left = evaluateSymbolic2(node.left, env);
-    const right = evaluateSymbolic2(node.right, env);
+    const left = evaluateSymbolic2(node.left, env, customRules);
+    const right = evaluateSymbolic2(node.right, env, customRules);
     const op = getOperatorSymbol(node.operator);
     return `(${left} ${op} ${right})`;
   }
@@ -249,13 +251,35 @@ function evaluateSymbolic2(node, env) {
   throw new Error("Unsupported node in step 7");
 }
 
-function compute(a, op, b) {
+function compute(a, op, b, customRules = []) {
   switch (op) {
     case '⊕': return a + b;
     case '⊖': return a - b;
     case '⊗': return a * b;
-    default: throw new Error(`Unknown operator ${op}`);
-}
+    case '÷': return a / b;
+    case '\\bmod': return a % b;
+    case '^': return Math.pow(a, b);
+    default: {
+      const rule = customRules.find(r =>
+        r.scope === 'arith' &&
+        getOperatorSymbol(r.op) === op
+      );
+
+      if (!rule) {
+        throw new Error(`Unknown operator ${op}`);
+      }
+
+      switch (rule.behavior) {
+        case 'add': return a + b;
+        case 'subtract': return a - b;
+        case 'multiply': return a * b;
+        case 'divide': return a / b;
+        case 'modulo': return a % b;
+        default:
+          throw new Error(`Unsupported arithmetic behavior: ${rule.behavior}`);
+      }
+    }
+  }
 }
 
 function toLatexExpr(node) {
