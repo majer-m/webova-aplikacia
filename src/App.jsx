@@ -25,6 +25,11 @@ export default function App() {
   const [customRules, setCustomRules] = useState([]);
   const [showRuleForm, setShowRuleForm] = useState(false);
 
+  const [learningMode, setLearningMode] = useState(false);
+  const [learningAnswer, setLearningAnswer] = useState("");
+  const [learningFeedback, setLearningFeedback] = useState("");
+  const [correctLearningAnswer, setCorrectLearningAnswer] = useState("");
+
   const [newRule, setNewRule] = useState({
   name: '',
   scope: 'arith',
@@ -205,7 +210,73 @@ function handleRemoveCustomRule(id) {
   
       setLastHighlightedOpStep3(null);
       setLastHighlightedOpStep4(null);
+
+      return randomExample;
     }
+
+
+  function startLearningMode() {
+    const example = handleGenerateExample();
+
+    setLearningMode(true);
+    setLearningAnswer("");
+    setLearningFeedback("");
+    setCorrectLearningAnswer("");
+
+    try {
+      const ast = parse(example.expression);
+
+      const env = Object.fromEntries(
+        example.environment.map(v => [v.name, Number(v.value)])
+      );
+
+      const isBool =
+        ast.type === "LogicalExpression" ||
+        ast.type === "BooleanLiteral" ||
+        ast.type === "UnaryExpression" ||
+        (ast.type === "BinaryExpression" &&
+          ["<=", "≤", "=", ">=", "!=", "<", ">"].includes(ast.operator));
+
+      const resultSteps = isBool
+        ? evaluateBooleanSteps(ast, env, customRules)
+        : evaluateUpToStep(ast, env, customRules);
+
+      const lastStep = resultSteps[resultSteps.length - 1];
+      const rawLastStep = typeof lastStep === "string" ? lastStep : lastStep.raw;
+
+      const matchBool = rawLastStep.match(/(tt|ff)\s*$/);
+      const matchNumber = rawLastStep.match(/=?\s*(-?\d+)\s*$/);
+
+      if (matchBool) {
+        setCorrectLearningAnswer(matchBool[1]);
+      } else if (matchNumber) {
+        setCorrectLearningAnswer(matchNumber[1]);
+      }
+
+      setSteps(resultSteps);
+      setVisibleSteps([]);
+      setTreeData(convertAstToTreeData(ast));
+      setMode(isBool ? "bool" : "arith");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function checkLearningAnswer() {
+    if (learningAnswer.trim() === correctLearningAnswer) {
+      setLearningFeedback(
+        language === "sk" ? "Správne!" : "Correct!"
+      );
+    } else {
+      setLearningFeedback(
+        language === "sk"
+          ? `Nesprávne. Správna odpoveď je ${correctLearningAnswer}.`
+          : `Incorrect. The correct answer is ${correctLearningAnswer}.`
+      );
+    }
+
+    setVisibleSteps(steps);
+  }
 
   function convertAstToTreeData(ast) {
     if (!ast) return { name: '?' };
@@ -361,9 +432,39 @@ function handleRemoveCustomRule(id) {
         </button>
 
         <button onClick={handleGenerateExample}>
+          <RotateCcw size={16} style={{ marginRight: '0.5rem' }} />
           {translations[language].generateExample}
         </button>
+
+        <button onClick={startLearningMode}>
+          {language === "sk" ? "Režim učenia" : "Learning mode"}
+        </button>
         
+        {learningMode && (
+          <div className="learning-box">
+            <h3>{language === "sk" ? "Režim učenia" : "Learning mode"}</h3>
+
+            <p>
+              {language === "sk"
+                ? "Aký je výsledok zadaného výrazu?"
+                : "What is the result of the entered expression?"}
+            </p>
+
+            <input
+              value={learningAnswer}
+              onChange={(e) => setLearningAnswer(e.target.value)}
+              placeholder={language === "sk" ? "Zadaj výsledok" : "Enter result"}
+            />
+
+            <button onClick={checkLearningAnswer}>
+              {language === "sk" ? "Skontrolovať" : "Check"}
+            </button>
+
+            {learningFeedback && <p>{learningFeedback}</p>}
+          </div>
+        )}
+
+
         <div className="container">
           {/* ĽAVÝ STĹPEC – pravidlá */}
           <div>
