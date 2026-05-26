@@ -147,6 +147,66 @@ function handleRemoveCustomRule(id) {
     setLastHighlightedOpStep4(null);
   };
 
+  function handleGenerateExample() {
+      const examples = [
+        {
+          expression: '((x - y) * 3) + 2',
+          environment: [
+            { name: 'x', value: 6 },
+            { name: 'y', value: 1 }
+          ]
+        },
+        {
+          expression: '(x + y) * 2',
+          environment: [
+            { name: 'x', value: 4 },
+            { name: 'y', value: 3 }
+          ]
+        },
+        {
+          expression: 'x <= y',
+          environment: [
+            { name: 'x', value: 2 },
+            { name: 'y', value: 5 }
+          ]
+        },
+        {
+          expression: '(x > y) ∨ false',
+          environment: [
+            { name: 'x', value: 6 },
+            { name: 'y', value: 1 }
+          ]
+        },
+        {
+          expression: '¬(x <= y)',
+          environment: [
+            { name: 'x', value: 8 },
+            { name: 'y', value: 3 }
+          ]
+        },
+        {
+          expression: '((x - y) * z) + 1',
+          environment: [
+            { name: 'x', value: 10 },
+            { name: 'y', value: 4 },
+            { name: 'z', value: 2 }
+          ]
+        }
+      ];
+  
+      const randomExample = examples[Math.floor(Math.random() * examples.length)];
+  
+      setExpression(randomExample.expression);
+      setEnvironment(randomExample.environment);
+  
+      setSteps([]);
+      setVisibleSteps([]);
+      setTreeData(null);
+  
+      setLastHighlightedOpStep3(null);
+      setLastHighlightedOpStep4(null);
+    }
+
   function convertAstToTreeData(ast) {
     if (!ast) return { name: '?' };
 
@@ -298,6 +358,10 @@ function handleRemoveCustomRule(id) {
         <button onClick={handleReset}>
           <RotateCcw size={16} style={{ marginRight: '0.5rem' }} />
           {translations[language].reset}
+        </button>
+
+        <button onClick={handleGenerateExample}>
+          {translations[language].generateExample}
         </button>
         
         <div className="container">
@@ -759,7 +823,8 @@ const translations = {
     astPlaceholder: "AST strom sa zobrazí po spustení výpočtu.",
     calculationTitle: "Výpočtové kroky",
     help: "Zobraziť nápovedu",
-    hideHelp: "Skryť nápovedu"
+    hideHelp: "Skryť nápovedu",
+    generateExample: "Generovať príklad"
   },
   en: {
     expression: "Expression:",
@@ -778,7 +843,8 @@ const translations = {
     astPlaceholder: "AST tree will appear after evaluation starts.",
     calculationTitle: "Evaluation Steps",
     help: "Show Help",
-    hideHelp: "Hide Help"
+    hideHelp: "Hide Help",
+    generateExample: "Generate example"
   }
 };
 
