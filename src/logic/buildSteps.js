@@ -16,7 +16,6 @@ export function generateStep1(ast) {
   return `\\mathcal{E}\\llbracket ${fullExpression}\\rrbracket s`;
 }
 
-
 export function generateStep2(ast, colored = false) {
   if (ast.type !== "BinaryExpression") {
     throw new Error("Expected BinaryExpression at root");
@@ -28,9 +27,9 @@ export function generateStep2(ast, colored = false) {
 
   if (colored) {
     return `= \\textcolor{gold}{\\mathcal{E}\\llbracket ${leftExpr} \\rrbracket s} \\textcolor{orange}{${op}} \\textcolor{cyan}{\\mathcal{E}\\llbracket ${rightExpr} \\rrbracket s}`;
-  } else {
-    return `= \\mathcal{E}\\llbracket ${leftExpr} \\rrbracket s ${op} \\mathcal{E}\\llbracket ${rightExpr} \\rrbracket s`;
   }
+
+  return `= \\mathcal{E}\\llbracket ${leftExpr} \\rrbracket s ${op} \\mathcal{E}\\llbracket ${rightExpr} \\rrbracket s`;
 }
 
 function getOperatorSymbol(op) {
@@ -38,18 +37,19 @@ function getOperatorSymbol(op) {
     case "+": return "⊕";
     case "-": return "⊖";
     case "*": return "⊗";
+    case "/": return "\\div";
     case "%": return "\\bmod";
     case "^": return "^";
     default: return op;
   }
 }
 
-
 let highlightUsedStep3 = false;
 export let lastHighlightedOpStep3 = null;
 
 export function generateStep3(ast, colored = false) {
   if (ast.type !== "BinaryExpression") throw new Error("Expected BinaryExpression");
+
   highlightUsedStep3 = false;
   lastHighlightedOpStep3 = null;
 
@@ -62,7 +62,7 @@ export function generateStep3(ast, colored = false) {
 
 function transformStep3(node, isTopLevel, forceSplit = false, colored = false) {
   if (node.type === "Literal" || node.type === "Identifier") {
-    return toLatexExpr(node); // vždy vracaj LaTeX, aj keď nie je farebné
+    return toLatexExpr(node);
   }
 
   if (node.type === "BinaryExpression") {
@@ -73,13 +73,15 @@ function transformStep3(node, isTopLevel, forceSplit = false, colored = false) {
 
       if (colored && !highlightUsedStep3) {
         highlightUsedStep3 = true;
-        lastHighlightedOpStep3 = node.operator; // ulož napr. "*"
-        return `\\left(\\textcolor{gold}{${toLatexExpr(node.left)}} \\textcolor{orange}{${getOperatorSymbol(node.operator)}} \\textcolor{cyan}{${toLatexExpr(node.right)}}\\right)`;
+        lastHighlightedOpStep3 = node.operator;
+
+        return `\\left(\\textcolor{gold}{${toLatexExpr(node.left)}} \\textcolor{orange}{${op}} \\textcolor{cyan}{${toLatexExpr(node.right)}}\\right)`;
       }
+
       return `\\left(${leftStr} ${op} ${rightStr}\\right)`;
-    } else {
-      return toLatexExpr(node);
     }
+
+    return toLatexExpr(node);
   }
 
   throw new Error("Unsupported node");
@@ -116,6 +118,7 @@ function transformStep4(node, colored = false) {
     if (colored && !highlightUsedStep4) {
       highlightUsedStep4 = true;
       lastHighlightedOpStep4 = node.operator;
+
       return `\\left(\\textcolor{gold}{${toLatexExpr(node.left)}} \\textcolor{orange}{${op}} \\textcolor{cyan}{${toLatexExpr(node.right)}}\\right)`;
     }
 
@@ -125,12 +128,13 @@ function transformStep4(node, colored = false) {
   throw new Error("Unsupported node in step 4");
 }
 
-// Pridané: univerzálny krok 5 s postupným nahradzovaním po jednom prvku
 export function generateStep5(ast, env, stepDepth = 0, colored = false) {
-  let counter = { current: 0 };
+  const counter = { current: 0 };
   const result = buildStep5(ast, env, stepDepth, colored, counter);
   const plain = buildStep5(ast, env, stepDepth, false, { current: 0 });
+
   if (!plain || buildStep5.lastPlain === plain) return null;
+
   buildStep5.lastPlain = plain;
   return `= ${result}`;
 }
@@ -141,17 +145,14 @@ function buildStep5(node, env = {}, stepDepth = 0, colored = false, counter = { 
     const val = `${node.value}`;
     const stepIndex = counter.current++;
 
-    // krok 1: zvýrazni N[[n]]
     if (stepDepth === stepIndex + 1) {
       return colored ? `\\textcolor{darkblue}{${nExpr}}` : nExpr;
     }
 
-    // po kroku 1 – len číslo bez farby
     if (stepDepth > stepIndex + 1) {
       return val;
     }
 
-    // pred výmenou
     return `\\mathcal{E}\\llbracket ${node.value}\\rrbracket s`;
   }
 
@@ -160,17 +161,14 @@ function buildStep5(node, env = {}, stepDepth = 0, colored = false, counter = { 
     const value = env[node.name];
     const stepIndex = counter.current++;
 
-    // krok 1: zvýrazni s x
     if (stepDepth === stepIndex + 1) {
       return colored ? `\\textcolor{green}{${sx}}` : sx;
     }
 
-    // po kroku 1 – len číslo bez farby
     if (stepDepth > stepIndex + 1 && value !== undefined) {
       return `${value}`;
     }
 
-    // pred výmenou
     return `\\mathcal{E}\\llbracket ${node.name}\\rrbracket s`;
   }
 
@@ -178,6 +176,7 @@ function buildStep5(node, env = {}, stepDepth = 0, colored = false, counter = { 
     const left = buildStep5(node.left, env, stepDepth, colored, counter);
     const right = buildStep5(node.right, env, stepDepth, colored, counter);
     const op = getOperatorSymbol(node.operator);
+
     return `\\left(${left} ${op} ${right}\\right)`;
   }
 
@@ -186,17 +185,20 @@ function buildStep5(node, env = {}, stepDepth = 0, colored = false, counter = { 
 
 export function getStep5ReplacementCount(ast) {
   let count = 0;
+
   function traverse(node) {
-    if (node.type === 'Identifier' || node.type === 'Literal') {
+    if (node.type === "Identifier" || node.type === "Literal") {
       count++;
     }
-    if (node.type === 'BinaryExpression') {
+
+    if (node.type === "BinaryExpression") {
       traverse(node.left);
       traverse(node.right);
     }
   }
+
   traverse(ast);
-  return count * 2; // každý uzol má dva podkroky: E[[x]]s -> sx -> 6
+  return count * 2;
 }
 
 export function generateStep7(ast, env, customRules = []) {
@@ -204,14 +206,14 @@ export function generateStep7(ast, env, customRules = []) {
   const steps = [];
 
   let current = expr;
-  const parenExpr = /\((-?\d+)\s*(⊕|⊖|⊗|÷|\\bmod|\^)\s*(-?\d+)\)/;
+  const parenExpr = /\((-?\d+(?:\.\d+)?)\s*(⊕|⊖|⊗|\\div|\\bmod|\^)\s*(-?\d+(?:\.\d+)?)\)/;
 
   while (true) {
     const match = current.match(parenExpr);
     if (!match) break;
 
     const [full, a, op, b] = match;
-    const result = compute(parseInt(a), op, parseInt(b), customRules);
+    const result = compute(parseFloat(a), op, parseFloat(b), customRules);
     const next = current.replace(full, result.toString());
 
     if (next !== current && !steps.includes(next)) {
@@ -228,7 +230,6 @@ export function generateStep7(ast, env, customRules = []) {
   return steps;
 }
 
-
 function evaluateSymbolic2(node, env, customRules = []) {
   if (node.type === "Literal") {
     return `${node.value}`;
@@ -238,6 +239,7 @@ function evaluateSymbolic2(node, env, customRules = []) {
     if (!(node.name in env)) {
       throw new Error(`Missing value for variable: ${node.name}`);
     }
+
     return `${env[node.name]}`;
   }
 
@@ -245,6 +247,7 @@ function evaluateSymbolic2(node, env, customRules = []) {
     const left = evaluateSymbolic2(node.left, env, customRules);
     const right = evaluateSymbolic2(node.right, env, customRules);
     const op = getOperatorSymbol(node.operator);
+
     return `(${left} ${op} ${right})`;
   }
 
@@ -253,30 +256,32 @@ function evaluateSymbolic2(node, env, customRules = []) {
 
 function compute(a, op, b, customRules = []) {
   switch (op) {
-    case '⊕': return a + b;
-    case '⊖': return a - b;
-    case '⊗': return a * b;
-    case '÷': return a / b;
-    case '\\bmod': return a % b;
-    case '^': return Math.pow(a, b);
+    case "⊕": return a + b;
+    case "⊖": return a - b;
+    case "⊗": return a * b;
+    case "^": return Math.pow(a, b);
+
     default: {
       const rule = customRules.find(r =>
-        r.scope === 'arith' &&
+        r.scope === "arith" &&
         getOperatorSymbol(r.op) === op
       );
 
       if (!rule) {
-        throw new Error(`Unknown operator ${op}`);
+        throw new Error(
+          `Operátor ${op} nie je podporovaný. Najskôr pridajte príslušné používateľské pravidlo.`
+        );
       }
 
       switch (rule.behavior) {
-        case 'add': return a + b;
-        case 'subtract': return a - b;
-        case 'multiply': return a * b;
-        case 'divide': return a / b;
-        case 'modulo': return a % b;
+        case "add": return a + b;
+        case "subtract": return a - b;
+        case "multiply": return a * b;
+        case "divide": return a / b;
+        case "modulo": return a % b;
+
         default:
-          throw new Error(`Unsupported arithmetic behavior: ${rule.behavior}`);
+          throw new Error(`Nepodporované správanie pravidla: ${rule.behavior}`);
       }
     }
   }
@@ -289,6 +294,7 @@ function toLatexExpr(node) {
 export function setLastHighlightedOpStep3(val) {
   lastHighlightedOpStep3 = val;
 }
+
 export function setLastHighlightedOpStep4(val) {
   lastHighlightedOpStep4 = val;
 }

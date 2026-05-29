@@ -21,11 +21,6 @@ export function parse(input) {
     return token;
   }
 
-  function getValueTypeForOperator(operator) {
-    const boolOps = ['=', '<=', '∧', '&', '¬', '!'];
-    return boolOps.includes(operator) ? 'bool' : 'arith';
-  }
-
   function parsePrimary() {
     const token = peek();
 

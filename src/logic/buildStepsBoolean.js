@@ -3,163 +3,272 @@ import { evaluateUpToStep } from './pushStep';
 export function evaluateBooleanSteps(ast, env, customRules = []) {
   const steps = [];
 
+  // true / false
+  if (ast.type === 'BooleanLiteral') {
+    const result = ast.value ? 'tt' : 'ff';
+
+    return [{
+      raw: `\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = ${result}`,
+      colored: `\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = \\textcolor{${result === 'tt' ? 'green' : 'red'}}{${result}}`,
+      opRule: ast.value ? 'true' : 'false'
+    }];
+  }
+
+  // negácia: ¬b alebo používateľské NOT
   if (
-        ast.type === 'BinaryExpression' &&
-        typeof ast.operator === 'string' &&
-        (
-          ast.operator === '=' ||
-          ast.operator === '<=' ||
-          ast.operator === '≤' ||
-          customRules.some(rule =>
-            rule.scope === 'bool' &&
-            rule.op === ast.operator &&
-            ['notEqual', 'lessThan', 'greaterThan', 'greaterEqual', 'lessEqual', 'equal'].includes(rule.behavior)
-          )
-        )
-    )  {
-    const e1 = ast.left;
-    const e2 = ast.right;
+    ast.type === 'UnaryExpression' &&
+    (
+      ast.operator === '¬' ||
+      ast.operator === '!' ||
+      hasCustomRule(customRules, ast.operator, 'not')
+    )
+  ) {
+    const innerSteps = evaluateBooleanSteps(ast.argument, env, customRules);
+    steps.push(...innerSteps);
 
-    steps.push(...evaluateUpToStep(e1, env));
-    steps.push(...evaluateUpToStep(e2, env));
+    const innerResult = lastBoolResult(innerSteps);
+    const result = innerResult === 'tt' ? 'ff' : 'tt';
 
-    const e1Val = evalArithmetic(ast.left, env);
-    const e2Val = evalArithmetic(ast.right, env);
-
-    let result;
-
-    const customRule = customRules.find(rule =>
-      rule.scope === 'bool' &&
-      rule.op === ast.operator
-    );
-
-    const behavior = customRule?.behavior;
-
-    if (ast.operator === '=' || behavior === 'equal') {
-      result = e1Val === e2Val ? 'tt' : 'ff';
-    } else if (ast.operator === '<=' || ast.operator === '≤' || behavior === 'lessEqual') {
-      result = e1Val <= e2Val ? 'tt' : 'ff';
-    } else if (behavior === 'greaterThan') {
-      result = e1Val > e2Val ? 'tt' : 'ff';
-    } else if (behavior === 'lessThan') {
-      result = e1Val < e2Val ? 'tt' : 'ff';
-    } else if (behavior === 'greaterEqual') {
-      result = e1Val >= e2Val ? 'tt' : 'ff';
-    } else if (behavior === 'notEqual') {
-      result = e1Val !== e2Val ? 'tt' : 'ff';
-    } else {
-      throw new Error(`Nepodporované boolovské pravidlo pre operátor: ${ast.operator}`);
-    }
-
-    // =
     steps.push({
-      raw: `\\mathbb{B}\\llbracket ${(toExpr(ast.left))} ${(ast.operator)} ${(toExpr(ast.right))}\\rrbracket s = ${(result)}`,
-      colored: highlightBoolOpInStep(`\\mathbb{B}\\llbracket ${(toExpr(ast.left))} ${(ast.operator)} ${(toExpr(ast.right))} \\rrbracket s = \\textcolor{${result === 'tt' ? 'green' : 'red'}}{${result}}`, ast.operator),
+      raw: `\\mathbb{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
+      colored: colorBoolResult(
+        `\\mathbb{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
+        result
+      ),
       opRule: ast.operator
     });
 
     return steps;
   }
 
-  if (ast.type === 'UnaryExpression' && ast.operator === '¬') {
-  const inner = ast.argument;
-  const innerSteps = evaluateBooleanSteps(inner, env);
-  steps.push(...innerSteps);
+  // relačné operátory: =, !=, <, >, <=, >=
+  if (ast.type === 'BinaryExpression' && isComparisonOperator(ast.operator, customRules)) {
+    steps.push(...evaluateUpToStep(ast.left, env, customRules));
+    steps.push(...evaluateUpToStep(ast.right, env, customRules));
 
-  const lastStep = innerSteps[innerSteps.length - 1];
-  const result = lastStep.raw.includes('tt') ? 'ff' : 'tt';
+    const leftValue = evalArithmetic(ast.left, env, customRules);
+    const rightValue = evalArithmetic(ast.right, env, customRules);
 
-  steps.push({
-    raw: `\\mathbb{B}\\llbracket ¬${toExpr(inner)}\\rrbracket s = ${result}`,
-    colored: highlightBoolOpInStep(`\\mathbb{B}\\llbracket ¬${toExpr(inner)}\\rrbracket s = ${result}`, ast.operator),
-    opRule: ast.operator
-  });
+    const behavior = getBehavior(ast.operator, customRules);
+    const result = evaluateComparison(leftValue, rightValue, ast.operator, behavior);
 
-  return steps;
+    steps.push({
+      raw: `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+      colored: colorBoolResult(
+        `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+        result
+      ),
+      opRule: ast.operator
+    });
+
+    return steps;
   }
 
-  if (
-      ast.type === 'LogicalExpression' &&
-      (
-        ast.operator === '∧' ||
-        customRules.some(rule =>
-          rule.scope === 'bool' &&
-          rule.op === ast.operator &&
-          ['and', 'or'].includes(rule.behavior)
-        )
-      )
-    ) {
-  const left = ast.left;
-  const right = ast.right;
+  // logické spojky: ∧, ∨ + používateľské AND/OR
+  if (ast.type === 'LogicalExpression' && isLogicalOperator(ast.operator, customRules)) {
+    const leftSteps = evaluateBooleanSteps(ast.left, env, customRules);
+    const rightSteps = evaluateBooleanSteps(ast.right, env, customRules);
 
-  const leftSteps = evaluateBooleanSteps(left, env, customRules);
-  const rightSteps = evaluateBooleanSteps(right, env, customRules);
+    steps.push(...leftSteps);
+    steps.push(...rightSteps);
 
-  steps.push(...leftSteps);
-  steps.push(...rightSteps);
+    const leftResult = lastBoolResult(leftSteps);
+    const rightResult = lastBoolResult(rightSteps);
 
-  const leftResult = lastBoolResult(leftSteps);
-  const rightResult = lastBoolResult(rightSteps);
+    const behavior = getBehavior(ast.operator, customRules);
+    const result = evaluateLogical(leftResult, rightResult, ast.operator, behavior);
 
-  const result = (leftResult === 'tt' && rightResult === 'tt') ? 'tt' : 'ff';
-  
-  // ∧
-  steps.push({
-    raw: `\\mathbb{B}\\llbracket ${(toExpr(ast.left))} ${(ast.operator)} ${(toExpr(ast.right))} \\rrbracket s = ${result}`,
-    colored: highlightBoolOpInStep(`\\mathbb{B}\\llbracket ${(toExpr(ast.left))} ${(ast.operator)} ${(toExpr(ast.right))} \\rrbracket s = ${result}`, ast.operator),
-    opRule: ast.operator
-  });
+    steps.push({
+      raw: `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+      colored: colorBoolResult(
+        `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+        result
+      ),
+      opRule: ast.operator
+    });
 
-  return steps;
+    return steps;
   }
 
-  // true alebo false
-  if (ast.type === 'BooleanLiteral') {
-    const result = ast.value ? 'tt' : 'ff';
-    return [{
-      raw: `\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = ${result}`,
-      colored: `\\textcolor{${result === 'tt' ? 'green' : 'red'}}{\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = ${result}}`
-    }];
-  }
-
-  throw new Error("Nepodporuje tento vyraz vypočtu");
+  throw new Error("Zadaný výraz nie je podporovaný. Skontrolujte syntax alebo použité operátory.");
 }
 
-function evalArithmetic(ast, env) {
-  if (ast.type === 'Literal') return ast.value;
-  if (ast.type === 'Identifier') return env[ast.name];
+function isComparisonOperator(operator, customRules = []) {
+  return (
+    ['=', '==', '<=', '≤'].includes(operator) ||
+    customRules.some(rule =>
+      rule.scope === 'bool' &&
+      rule.op === operator &&
+      ['lessThan', 'greaterThan', 'greaterEqual'].includes(rule.behavior)
+    )
+  );
+}
+
+function isLogicalOperator(operator, customRules = []) {
+  return (
+    ['∧', '&'].includes(operator) ||
+    customRules.some(rule =>
+      rule.scope === 'bool' &&
+      rule.op === operator &&
+      rule.behavior === 'or'
+    )
+  );
+}
+
+function hasCustomRule(customRules, operator, behavior) {
+  return customRules.some(rule =>
+    rule.scope === 'bool' &&
+    rule.op === operator &&
+    rule.behavior === behavior
+  );
+}
+
+function getBehavior(operator, customRules = []) {
+  const rule = customRules.find(rule =>
+    rule.scope === 'bool' &&
+    rule.op === operator
+  );
+
+  return rule?.behavior;
+}
+
+function evaluateComparison(left, right, operator, behavior) {
+  if (operator === '=' || operator === '==' || behavior === 'equal') {
+    return left === right ? 'tt' : 'ff';
+  }
+
+  if (operator === '<=' || operator === '≤' || behavior === 'lessEqual') {
+    return left <= right ? 'tt' : 'ff';
+  }
+
+  if (operator === '<' || behavior === 'lessThan') {
+    return left < right ? 'tt' : 'ff';
+  }
+
+  if (operator === '>' || behavior === 'greaterThan') {
+    return left > right ? 'tt' : 'ff';
+  }
+
+  if (operator === '>=' || operator === '≥' || behavior === 'greaterEqual') {
+    return left >= right ? 'tt' : 'ff';
+  }
+
+  throw new Error(`Najskôr pridajte používateľské pravidlo pre operátor: ${operator}`);
+}
+
+function evaluateLogical(leftResult, rightResult, operator, behavior) {
+  if (operator === '∧' || operator === '&' || behavior === 'and') {
+    return leftResult === 'tt' && rightResult === 'tt' ? 'tt' : 'ff';
+  }
+
+  if (operator === '∨' || operator === '|' || operator === 'v' || behavior === 'or') {
+    return leftResult === 'tt' || rightResult === 'tt' ? 'tt' : 'ff';
+  }
+
+  throw new Error(`Najskôr pridajte používateľské pravidlo pre operátor: ${operator}`);
+}
+
+function evalArithmetic(ast, env, customRules = []) {
+  if (ast.type === 'Literal') {
+    return ast.value;
+  }
+
+  if (ast.type === 'Identifier') {
+    if (!(ast.name in env)) {
+      throw new Error(`Chýba hodnota pre premennú: ${ast.name}`);
+    }
+
+    return env[ast.name];
+  }
+
   if (ast.type === 'BinaryExpression') {
-    const left = evalArithmetic(ast.left, env);
-    const right = evalArithmetic(ast.right, env);
-    return evalOp(ast.operator, left, right);
+    const left = evalArithmetic(ast.left, env, customRules);
+    const right = evalArithmetic(ast.right, env, customRules);
+
+    return evalArithmeticOperator(ast.operator, left, right, customRules);
   }
-  throw new Error("Neznámy aritmetický uzol");
+
+  throw new Error("Neznámy aritmetický uzol.");
 }
 
-function evalOp(op, a, b) {
-  switch (op) {
-    case '+': return a + b;
-    case '-': return a - b;
-    case '*': return a * b;
-    case '/': return a / b;
-    default:
-      throw new Error(`Unsupported operator: ${op}`);
+function evalArithmeticOperator(operator, left, right, customRules = []) {
+  switch (operator) {
+    case '+':
+      return left + right;
+
+    case '-':
+      return left - right;
+
+    case '*':
+      return left * right;
+
+    case '/':
+      return left / right;
+
+    case '%':
+      return left % right;
+
+    case '^':
+      return Math.pow(left, right);
+
+    default: {
+      const rule = customRules.find(rule =>
+        rule.scope === 'arith' &&
+        rule.op === operator
+      );
+
+      if (!rule) {
+        throw new Error(`Nepodporovaný aritmetický operátor: ${operator}`);
+      }
+
+      switch (rule.behavior) {
+        case 'add':
+          return left + right;
+
+        case 'subtract':
+          return left - right;
+
+        case 'multiply':
+          return left * right;
+
+        case 'divide':
+          return left / right;
+
+        case 'modulo':
+          return left % right;
+
+        default:
+          throw new Error(`Nepodporované aritmetické pravidlo: ${rule.behavior}`);
+      }
+    }
   }
 }
 
 function toExpr(ast) {
-  if (ast.type === 'Identifier') return ast.name;
-  if (ast.type === 'Literal') return ast.value;
-  if (ast.type === 'BooleanLiteral') return ast.value ? 'true' : 'false'; // pridané
+  if (ast.type === 'Identifier') {
+    return ast.name;
+  }
+
+  if (ast.type === 'Literal') {
+    return ast.value;
+  }
+
+  if (ast.type === 'BooleanLiteral') {
+    return ast.value ? 'true' : 'false';
+  }
+
   if (ast.type === 'BinaryExpression') {
     return `(${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)})`;
   }
+
   if (ast.type === 'LogicalExpression') {
-    return `(${toExpr(ast.left)} ∧ ${toExpr(ast.right)})`;
+    return `(${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)})`;
   }
+
   if (ast.type === 'UnaryExpression') {
-    return `¬(${toExpr(ast.argument)})`;
+    return `${ast.operator}(${toExpr(ast.argument)})`;
   }
+
   return '?';
 }
 
@@ -172,8 +281,13 @@ function lastBoolResult(stepArray) {
         ? step
         : step.raw || '';
 
-    if (raw.includes('tt')) return 'tt';
-    if (raw.includes('ff')) return 'ff';
+    if (raw.includes('tt')) {
+      return 'tt';
+    }
+
+    if (raw.includes('ff')) {
+      return 'ff';
+    }
   }
 
   return '?';
@@ -181,35 +295,11 @@ function lastBoolResult(stepArray) {
 
 export let lastHighlightedBoolOperator = null;
 
-function highlightBoolOpInStep(rawText, operator) {
-  lastHighlightedBoolOperator = operator;
+function colorBoolResult(rawText, result) {
+  const color = result === 'tt' ? 'green' : 'red';
 
-  const match = rawText.match(/^𝔅\[(.*)\]s = (tt|ff)$/);
-  if (!match) return rawText;
-
-  const innerExpr = match[1];
-  const result = match[2];
-
-  // rozdelenie výrazu podľa hlavného operátora (napr. = alebo <=)
-  const splitRegex = new RegExp(`(.*)\\s*\\${operator}\\s*(.*)`);
-  const subMatch = innerExpr.match(splitRegex);
-
-  let highlightedExpr = innerExpr;
-  if (subMatch) {
-    const left = subMatch[1].trim();
-    const right = subMatch[2].trim();
-    highlightedExpr =
-      `\\textcolor{gold}{${left}} ` +
-      `\\textcolor{orange}{${operator}} ` +
-      `\\textcolor{cyan}{${right}}`;
-  }
-
-  const coloredResult = result === 'tt'
-    ? `\\textcolor{green}{tt}`
-    : `\\textcolor{red}{ff}`;
-
-  return `{\\mathbb{B}\\llbracket ${highlightedExpr} \\rrbracket s} = ${coloredResult}`;
+  return rawText.replace(
+    `= ${result}`,
+    `= \\textcolor{${color}}{${result}}`
+  );
 }
-
-
-
