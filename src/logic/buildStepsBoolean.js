@@ -8,8 +8,8 @@ export function evaluateBooleanSteps(ast, env, customRules = []) {
     const result = ast.value ? 'tt' : 'ff';
 
     return [{
-      raw: `\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = ${result}`,
-      colored: `\\mathbb{B}\\llbracket ${ast.value} \\rrbracket s = \\textcolor{${result === 'tt' ? 'green' : 'red'}}{${result}}`,
+      raw: `\\mathcal{B}\\llbracket ${ast.value} \\rrbracket s = ${result}`,
+      colored: `\\mathcal{B}\\llbracket ${ast.value} \\rrbracket s = \\textcolor{${result === 'tt' ? 'green' : 'red'}}{${result}}`,
       opRule: ast.value ? 'true' : 'false'
     }];
   }
@@ -30,9 +30,9 @@ export function evaluateBooleanSteps(ast, env, customRules = []) {
     const result = innerResult === 'tt' ? 'ff' : 'tt';
 
     steps.push({
-      raw: `\\mathbb{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
+      raw: `\\mathcal{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
       colored: colorBoolResult(
-        `\\mathbb{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
+        `\\mathcal{B}\\llbracket ${ast.operator}${toExpr(ast.argument)} \\rrbracket s = ${result}`,
         result
       ),
       opRule: ast.operator
@@ -53,9 +53,9 @@ export function evaluateBooleanSteps(ast, env, customRules = []) {
     const result = evaluateComparison(leftValue, rightValue, ast.operator, behavior);
 
     steps.push({
-      raw: `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+      raw: `\\mathcal{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
       colored: colorBoolResult(
-        `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+        `\\mathcal{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
         result
       ),
       opRule: ast.operator
@@ -79,9 +79,9 @@ export function evaluateBooleanSteps(ast, env, customRules = []) {
     const result = evaluateLogical(leftResult, rightResult, ast.operator, behavior);
 
     steps.push({
-      raw: `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+      raw: `\\mathcal{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
       colored: colorBoolResult(
-        `\\mathbb{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
+        `\\mathcal{B}\\llbracket ${toExpr(ast.left)} ${ast.operator} ${toExpr(ast.right)} \\rrbracket s = ${result}`,
         result
       ),
       opRule: ast.operator

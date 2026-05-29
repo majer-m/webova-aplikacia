@@ -735,12 +735,12 @@ function extractOperatorFromStep(step) {
 }
 
 const semanticRulesBool = [
-  { op: 'true', latex: '\\mathbb{B}\\llbracket true \\rrbracket s = tt' },
-  { op: 'false', latex: '\\mathbb{B}\\llbracket false \\rrbracket s = ff' },
-  { op: '=', latex: '\\mathbb{B}\\llbracket e_1 = e_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s = \\mathcal{E}\\llbracket e_2 \\rrbracket s \\\\ ff, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s \\neq \\mathcal{E}\\llbracket e_2 \\rrbracket s \\end{array} \\right.' },
-  { op: '<=', latex: '\\mathbb{B}\\llbracket e_1 \\leq e_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s \\leq \\mathcal{E}\\llbracket e_2 \\rrbracket s \\\\ ff, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s > \\mathcal{E}\\llbracket e_2 \\rrbracket s \\end{array} \\right.' },
-  { op: '¬', latex: '\\mathbb{B}\\llbracket \\neg b \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathbb{B}[b]s = ff \\\\ ff, & \\text{ ak } \\mathbb{B}[b]s = tt \\end{array} \\right.' },
-  { op: '∧', latex: '\\mathbb{B}\\llbracket b_1 \\land b_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathbb{B}[b_1]s = tt \\text{ a } \\mathbb{B}[b_2]s = tt \\\\ ff, & \\text{ ak } \\mathbb{B}[b_1]s = ff \\text{ alebo } \\mathbb{B}[b_2]s = ff \\end{array} \\right.' },
+  { op: 'true', latex: '\\mathcal{B}\\llbracket true \\rrbracket s = tt' },
+  { op: 'false', latex: '\\mathcal{B}\\llbracket false \\rrbracket s = ff' },
+  { op: '=', latex: '\\mathcal{B}\\llbracket e_1 = e_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s = \\mathcal{E}\\llbracket e_2 \\rrbracket s \\\\ ff, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s \\neq \\mathcal{E}\\llbracket e_2 \\rrbracket s \\end{array} \\right.' },
+  { op: '<=', latex: '\\mathcal{B}\\llbracket e_1 \\leq e_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s \\leq \\mathcal{E}\\llbracket e_2 \\rrbracket s \\\\ ff, & \\text{ ak } \\mathcal{E}\\llbracket e_1 \\rrbracket s > \\mathcal{E}\\llbracket e_2 \\rrbracket s \\end{array} \\right.' },
+  { op: '¬', latex: '\\mathcal{B}\\llbracket \\neg b \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{B}[b]s = ff \\\\ ff, & \\text{ ak } \\mathcal{B}[b]s = tt \\end{array} \\right.' },
+  { op: '∧', latex: '\\mathcal{B}\\llbracket b_1 \\land b_2 \\rrbracket s = \\left\\{ \\begin{array}{ll} tt, & \\text{ ak } \\mathcal{B}[b_1]s = tt \\text{ a } \\mathcal{B}[b_2]s = tt \\\\ ff, & \\text{ ak } \\mathcal{B}[b_1]s = ff \\text{ alebo } \\mathcal{B}[b_2]s = ff \\end{array} \\right.' },
 ];
 
 const renderCustomNode = ({ nodeDatum }) => {
