@@ -20,7 +20,7 @@ export default function HelpSection({ language }) {
             {isSk
               ? 'Podporované operátory:'
               : 'Supported operators:'}{' '}
-            <code>+</code>, <code>-</code>, <code>*</code>
+            <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>
           </li>
           <li>
             {isSk
@@ -40,7 +40,7 @@ export default function HelpSection({ language }) {
           </li>
           <li>
             {isSk ? 'Operátory:' : 'Operators:'}{' '}
-            <code>=</code>, <code>&le;</code>, <code>∧</code>, <code>¬</code>
+            <code>=</code>, <code>==</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>∧</code>, <code>∨</code>, <code>¬</code>
           </li>
           <li>
             {isSk ? 'Príklad:' : 'Example:'}{' '}

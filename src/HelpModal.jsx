@@ -14,7 +14,7 @@ export default function HelpModal({ show, onClose }) {
             <summary><strong>Aritmetické výrazy</strong></summary>
             <ul>
               <li>Zápis výrazov ako <code>((x - y) * 3) + 2</code></li>
-              <li>Podporované operátory: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code></li>
+              <li>Podporované operátory: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
               <li>Premenné definuj pomocou <code>x=5,y=2</code></li>
             </ul>
           </details>
@@ -23,7 +23,7 @@ export default function HelpModal({ show, onClose }) {
             <summary><strong>Booleovské výrazy</strong></summary>
             <ul>
               <li>Logické konštanty: <code>true</code>, <code>false</code></li>
-              <li>Operátory: <code>=</code>, <code>&lt;=</code>, <code>∧</code>, <code>¬</code></li>
+              <li>Operátory: <code>=</code>, <code>==</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>∧</code>, <code>∨</code>, <code>¬</code></li>
               <li>Príklad: <code>!(x = y) ∧ true</code></li>
             </ul>
           </details>
